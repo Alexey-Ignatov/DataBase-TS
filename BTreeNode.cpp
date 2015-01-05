@@ -24,36 +24,34 @@ BTreeNode::BTreeNode(int t1, bool leaf1)
 
 // A utility function that returns the index of the first key that is
 // greater than or equal to k
-int BTreeNode::findKeyPosition(int k)
+int BTreeNode::findKey(int k)
 {
     int idx=0;
     while (idx<n && keys[idx] < k)
         ++idx;
     return idx;
 }
-//TODO: change name% it is return not key^ but index
 
 // A function to remove the key k from the sub-tree rooted with this node
 void BTreeNode::remove(int k)
 {
-    int kPos = findKeyPosition(k);
+    int idx = findKey(k);
     
     // The key to be removed is present in this node
-    if (kPos < n && keys[kPos] == k)
+    if (idx < n && keys[idx] == k)
     {
         
         // If the node is a leaf node - removeFromLeaf is called
         // Otherwise, removeFromNonLeaf function is called
         if (leaf)
-            removeFromLeaf(kPos);
+            removeFromLeaf(idx);
         else
-            removeFromNonLeaf(kPos);
+            removeFromNonLeaf(idx);
     }
     else
     {
         
         // If this node is a leaf node, then the key is not present in tree
-        
         if (leaf)
         {
             std::cout << "The key "<< k <<" is does not exist in the tree\n";
@@ -63,10 +61,8 @@ void BTreeNode::remove(int k)
         // The key to be removed is present in the sub-tree rooted with this node
         // The flag indicates whether the key is present in the sub-tree rooted
         // with the last child of this node
-        bool flag = kPos==n;
+        bool flag = ( (idx==n)? true : false );
         
-        
-        //TODO: Вообще говоря, хочется делать эту и следующую операция за одно чтение, а не за два
         // If the child where the key is supposed to exist has less that t keys,
         // we fill that child
         BTreeNode *childRemoveIn = readNodeFromDisk(childOffsets[kPos])
