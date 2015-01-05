@@ -16,7 +16,7 @@ BTreeNode::BTreeNode(int t1, bool leaf1)
     // Allocate memory for maximum number of possible keys
     // and child pointers
     keys = new int[2*t-1];
-    C = new BTreeNode *[2*t];
+    childOffsets = new int[2*t];
     
     // Initialize the number of keys as 0
     n = 0;
@@ -24,34 +24,36 @@ BTreeNode::BTreeNode(int t1, bool leaf1)
 
 // A utility function that returns the index of the first key that is
 // greater than or equal to k
-int BTreeNode::findKey(int k)
+int BTreeNode::findKeyPosition(int k)
 {
     int idx=0;
     while (idx<n && keys[idx] < k)
         ++idx;
     return idx;
 }
+//TODO: change name% it is return not key^ but index
 
 // A function to remove the key k from the sub-tree rooted with this node
 void BTreeNode::remove(int k)
 {
-    int idx = findKey(k);
+    int kPos = findKeyPosition(k);
     
     // The key to be removed is present in this node
-    if (idx < n && keys[idx] == k)
+    if (kPos < n && keys[kPos] == k)
     {
         
         // If the node is a leaf node - removeFromLeaf is called
         // Otherwise, removeFromNonLeaf function is called
         if (leaf)
-            removeFromLeaf(idx);
+            removeFromLeaf(kPos);
         else
-            removeFromNonLeaf(idx);
+            removeFromNonLeaf(kPos);
     }
     else
     {
         
         // If this node is a leaf node, then the key is not present in tree
+        
         if (leaf)
         {
             std::cout << "The key "<< k <<" is does not exist in the tree\n";
@@ -61,20 +63,26 @@ void BTreeNode::remove(int k)
         // The key to be removed is present in the sub-tree rooted with this node
         // The flag indicates whether the key is present in the sub-tree rooted
         // with the last child of this node
-        bool flag = ( (idx==n)? true : false );
+        bool flag = kPos==n;
         
+        
+        //TODO: Вообще говоря, хочется делать эту и следующую операция за одно чтение, а не за два
         // If the child where the key is supposed to exist has less that t keys,
         // we fill that child
-        if (C[idx]->n < t)
-            fill(idx);
+        BTreeNode *childRemoveIn = readNodeFromDisk(childOffsets[kPos])
+        if (childRemoveIn->n < t)
+            fill(kPos);
+        
         
         // If the last child has been merged, it must have merged with the previous
         // child and so we recurse on the (idx-1)th child. Else, we recurse on the
         // (idx)th child which now has atleast t keys
-        if (flag && idx > n)
-            C[idx-1]->remove(k);
+        
+        if (flag && kPos > n)
+            C[kPos-1]->remove(k);
         else
-            C[idx]->remove(k);
+            C[kPos]->remove(k);
+        //TODO: думаю, из условия можно убрать флаг и C[kPos-1] заменить на C[n] в обоих случаях
     }
     return;
 }

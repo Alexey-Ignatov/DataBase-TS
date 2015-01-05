@@ -17,7 +17,7 @@ class BTreeNode
 {
     int *keys;  // An array of keys
     int t;      // Minimum degree (defines the range for number of keys)
-    BTreeNode **C; // An array of child pointers
+    int *childOffsets; // An array of child offsets
     int n;     // Current number of keys
     bool leaf; // Is true when node is leaf. Otherwise false
     
@@ -33,7 +33,7 @@ public:
     
     // A function that returns the index of the first key that is greater
     // or equal to k
-    int findKey(int k);
+    int findKeyPosition(int k);
     
     // A utility function to insert a new key in the subtree rooted with
     // this node. The assumption is, the node must be non-full when this
@@ -68,6 +68,7 @@ public:
     // A function to fill up the child node present in the idx-th
     // position in the C[] array if that child has less than t-1 keys
     void fill(int idx);
+    //Помимо изменений на диске должен еще возвращать указательна на вновь созданный BtreeNode
     
     // A function to borrow a key from the C[idx-1]-th node and place
     // it in C[idx]th node
