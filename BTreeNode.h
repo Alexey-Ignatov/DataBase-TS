@@ -10,20 +10,45 @@
 #define __DataBaseTS__BTreeNode__
 
 #include <stdio.h>
+#include <vector>
+#include <map>
 #include<iostream>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
 
 // A BTree node
 class BTreeNode
 {
-    int *keys;  // An array of keys
-    int t;      // Minimum degree (defines the range for number of keys)
-    int *childOffsets; // An array of child offsets
+public:
+    int t;     // Minimum degree (defines the range for number of keys)
     int n;     // Current number of keys
     bool leaf; // Is true when node is leaf. Otherwise false
     
-public:
+    int *keys;  // An array of keys
+    int *childrenOffsets; // An array of child pointers
     
-    BTreeNode(int _t, bool _leaf);   // Constructor
+    int blockSize;//memory block size
+    std::vector<char *> blocks;//memory blocks
+    
+    //std::map<int, BTreeNode *> littleNodeCache;
+    
+    
+    int fileDesc;
+    int ownOffset;
+    
+    //TODO: добавить эти параметры в конструктор
+    //TODO: или везде вектора или массивы
+    
+    
+
+    
+    int writeNode(int offset);
+    
+    BTreeNode *readNode(int offset);
+    
+    BTreeNode(int _t,int fileDesc, int blockSize);   // Constructor
     
     // A function to traverse all nodes in a subtree rooted with this node
     void traverse();
@@ -33,12 +58,12 @@ public:
     
     // A function that returns the index of the first key that is greater
     // or equal to k
-    int findKeyPosition(int k);
+    int findKey(int k);
     
     // A utility function to insert a new key in the subtree rooted with
     // this node. The assumption is, the node must be non-full when this
     // function is called
-    void insertNonFull(int k);
+    void insertNonFull(int k, char *block);
     
     // A utility function to split the child y of this node. i is index
     // of y in child array C[].  The Child y must be full when this
@@ -68,7 +93,6 @@ public:
     // A function to fill up the child node present in the idx-th
     // position in the C[] array if that child has less than t-1 keys
     void fill(int idx);
-    //Помимо изменений на диске должен еще возвращать указательна на вновь созданный BtreeNode
     
     // A function to borrow a key from the C[idx-1]-th node and place
     // it in C[idx]th node

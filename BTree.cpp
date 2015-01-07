@@ -24,9 +24,6 @@ void BTree::traverse()
 }
 
 
-
-
-
 BTreeNode* BTree::search(int k){
     return (root == NULL)? NULL : root->search(k);
 }
@@ -73,33 +70,4 @@ void BTree::insert(int k)
     }
 }
 
-// A utility function to insert a new key in this node
-// The assumption is, the node must be non-full when this
-// function is called
 
-void BTree::remove(int k)
-{
-    if (!root)
-    {
-        std::cout << "The tree is empty\n";
-        return;
-    }
-    
-    // Call the remove function for root
-    root->remove(k);
-    
-    // If the root node has 0 keys, make its first child as the new root
-    //  if it has a child, otherwise set root as NULL
-    if (root->n==0)
-    {
-        BTreeNode *tmp = root;
-        if (root->leaf)
-            root = NULL;
-        else
-            root = root->C[0];
-        
-        // Free the old root
-        delete tmp;
-    }
-    return;
-}

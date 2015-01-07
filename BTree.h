@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include "BTreeNode.h"
+
 class BTree
 {
     BTreeNode *root; // Pointer to root node
@@ -32,5 +33,6 @@ public:
     void remove(int k);
     
 };
+int Factorial(int n);
 
 #endif /* defined(__DataBaseTS__BTree__) */

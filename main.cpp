@@ -6,45 +6,14 @@
 //  Copyright (c) 2015 Apple. All rights reserved.
 //
 
-/* The following program performs deletion on a B-Tree. It contains functions
- specific for deletion along with all the other functions provided in the
- previous articles on B-Trees. See http://www.geeksforgeeks.org/b-tree-set-1-introduction-2/
- for previous article.
- 
- The deletion function has been compartmentalized into 8 functions for ease
- of understanding and clarity
- 
- The following functions are exclusive for deletion
- In class BTreeNode:
- 1) remove
- 2) removeFromLeaf
- 3) removeFromNonLeaf
- 4) getPred
- 5) getSucc
- 6) borrowFromPrev
- 7) borrowFromNext
- 8) merge
- 9) findKey
- 
- In class BTree:
- 1) remove
- 
- The removal of a key from a B-Tree is a fairly complicated process. The program handles
- all the 6 different cases that might arise while removing a key.
- 
- Testing: The code has been tested using the B-Tree provided in the CLRS book( included
- in the main function ) along with other cases.
- 
- Reference: CLRS3 - Chapter 18 - (499-502)
- It is advised to read the material in CLRS before taking a look at the code. */
-
 #include<iostream>
-#include "BTree.h"
+#include "BTreeNode.h"
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
 #include <string.h>
+#include <string>
 
 #include <stdio.h>
 #include <fstream>
@@ -54,85 +23,79 @@ using namespace std;
 // Driver program to test above functions
 int main()
 {
-    BTree t(3); // A B-Tree with minium degree 3
     
-    t.insert(1);
-    t.insert(3);
-    t.insert(7);
-    t.insert(10);
-    t.insert(11);
-    t.insert(13);
-    t.insert(14);
-    t.insert(15);
-    t.insert(18);
-    t.insert(16);
-    t.insert(19);
-    t.insert(24);
-    t.insert(25);
-    t.insert(26);
-    t.insert(21);
-    t.insert(4);
-    t.insert(5);
-    t.insert(20);
-    t.insert(22);
-    t.insert(2);
-    t.insert(17);
-    t.insert(12);
-    t.insert(6);
+    int tree_t = 2;
+    int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*4 + 2*tree_t*4 + (2*tree_t-1)*32;//80t - 39
+    int blockSize = 32;
     
-    cout << "Traversal of tree constructed is\n";
-    t.traverse();
-    cout << endl;
+    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!10";
+    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!20";
+    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!30";
+    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!40";
+    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!50";
+    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!60";
+    int file = open("from main.txt", O_RDWR | O_CREAT);
     
-    t.remove(6);
-    cout << "Traversal of tree after removing 6\n";
-    t.traverse();
-    cout << endl;
+    write(file, c1, 1024);
+    lseek(file, 0, SEEK_SET);
     
-    t.remove(13);
-    cout << "Traversal of tree after removing 13\n";
-    t.traverse();
-    cout << endl;
     
-    t.remove(7);
-    cout << "Traversal of tree after removing 7\n";
-    t.traverse();
-    cout << endl;
+    BTreeNode head(tree_t, file, blockSize);
+    head.keys[0] = 200;
+    head.keys[1] = 400;
     
-    t.remove(4);
-    cout << "Traversal of tree after removing 4\n";
-    t.traverse();
-    cout << endl;
-    
-    t.remove(2);
-    cout << "Traversal of tree after removing 2\n";
-    t.traverse();
-    cout << endl;
-    
-    t.remove(16);
-    cout << "Traversal of tree after removing 16\n";
-    t.traverse();
-    cout << endl;
-    
-    /*char buf[20];
-    size_t nbytes;
-    ssize_t bytes_written;
-    int fd= open("m.txt", O_WRONLY | O_CREAT);
-    strcpy(buf, "This is a test\n");
-    nbytes = strlen(buf);
-    
-    bytes_written = write(fd, buf, nbytes);*/
+    head.childrenOffsets[0] = nodeSizeOnDisk;
+    head.childrenOffsets[1] = 2*nodeSizeOnDisk;
+    head.childrenOffsets[2] = 3*nodeSizeOnDisk;
 
+    head.blocks.push_back(c2);
+    head.blocks.push_back(c4);
+    
+    head.n = 2;
+    head.leaf = false;
+    head.writeNode(0);
+    
+    
+    BTreeNode left(tree_t, file, blockSize);
+    left.keys[0] = 100;
+    left.blocks.push_back(c1);
+    left.n = 1;
+    left.leaf = true;
+    left.writeNode(nodeSizeOnDisk);
+    
+    BTreeNode mid(tree_t, file, blockSize);
+    mid.keys[0] = 300;
+    mid.blocks.push_back(c3);
+    mid.n = 1;
+    mid.leaf = true;
+    mid.writeNode(2*nodeSizeOnDisk);
+    
+    BTreeNode right(tree_t, file, blockSize);
+    right.keys[0] = 500;
+    right.blocks.push_back(c5);
+    right.n = 1;
+    right.leaf = true;
+    right.writeNode(3*nodeSizeOnDisk);
+    
+    head.insertNonFull(150, c6);
+    
+    //cout<< "offset "<<lseek(file, 0, SEEK_CUR)<<endl;
+    //cout<< "suggoffset "<<4*nodeSizeOnDisk<<endl;
+    
+    BTreeNode c(tree_t,  file, blockSize);
+    c.readNode(1*nodeSizeOnDisk);
+    
+    
+    cout << c.keys[0]<<endl;
+    cout << c.keys[1]<<endl<<endl;
+    
+    //cout << c.childrenOffsets[0]<<endl;
+    //cout << c.childrenOffsets[1]<<endl;
+    //cout << c.childrenOffsets[2]<<endl<<endl;
 
+    cout << string(c.blocks[0], 32)<<endl;
+    cout << string(c.blocks[1], 32)<<endl<<endl;
     
-    /*char c[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!";
-    int file = open("m.txt", O_WRONLY | O_CREAT);
-    fflush(stdout);
-    write(file,c ,15 );
-    lseek(file, 5, SEEK_SET);
-    write(file,c ,15 );    
-    fflush(stdout);*/
-    
-    
+    cout<< "is leaf "<<c.leaf<<endl;
     return 0;
 }

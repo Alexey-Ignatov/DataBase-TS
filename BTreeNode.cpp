@@ -7,308 +7,86 @@
 //
 
 #include "BTreeNode.h"
-BTreeNode::BTreeNode(int t1, bool leaf1)
-{
-    // Copy the given minimum degree and leaf property
-    t = t1;
-    leaf = leaf1;
-    
-    // Allocate memory for maximum number of possible keys
-    // and child pointers
-    keys = new int[2*t-1];
-    childOffsets = new int[2*t];
-    
-    // Initialize the number of keys as 0
-    n = 0;
-}
 
-// A utility function that returns the index of the first key that is
-// greater than or equal to k
-int BTreeNode::findKey(int k)
-{
-    int idx=0;
-    while (idx<n && keys[idx] < k)
-        ++idx;
-    return idx;
-}
 
-// A function to remove the key k from the sub-tree rooted with this node
-void BTreeNode::remove(int k)
-{
-    int idx = findKey(k);
+
+
+int BTreeNode::writeNode(int offset ){
+
+    ownOffset = offset;
+    lseek(fileDesc, offset, SEEK_SET);
+
+    //сначала пишем количество ключей
+    write(fileDesc, &n, sizeof(n));
     
-    // The key to be removed is present in this node
-    if (idx < n && keys[idx] == k)
-    {
-        
-        // If the node is a leaf node - removeFromLeaf is called
-        // Otherwise, removeFromNonLeaf function is called
-        if (leaf)
-            removeFromLeaf(idx);
-        else
-            removeFromNonLeaf(idx);
-    }
-    else
-    {
-        
-        // If this node is a leaf node, then the key is not present in tree
-        if (leaf)
-        {
-            std::cout << "The key "<< k <<" is does not exist in the tree\n";
-            return;
+    write(fileDesc, &leaf, sizeof(leaf));
+    
+
+    //потом пишем ключи
+    write(fileDesc, keys, (2*t - 1)*sizeof(int));
+    
+    //потом потомков
+    //для листев эта процедура кидает в файл треш из помяти
+    write(fileDesc,childrenOffsets, 2*t*sizeof(int));
+    
+    
+    //затем блоки
+    char tmp[blockSize];
+    for (int i = 0; i < 2*t - 1; ++i) {
+        if (i <n) {
+            write(fileDesc, blocks[i], blockSize);
+        }else{
+            write(fileDesc, tmp, blockSize);
         }
         
-        // The key to be removed is present in the sub-tree rooted with this node
-        // The flag indicates whether the key is present in the sub-tree rooted
-        // with the last child of this node
-        bool flag = ( (idx==n)? true : false );
-        
-        // If the child where the key is supposed to exist has less that t keys,
-        // we fill that child
-        BTreeNode *childRemoveIn = readNodeFromDisk(childOffsets[kPos])
-        if (childRemoveIn->n < t)
-            fill(kPos);
-        
-        
-        // If the last child has been merged, it must have merged with the previous
-        // child and so we recurse on the (idx-1)th child. Else, we recurse on the
-        // (idx)th child which now has atleast t keys
-        
-        if (flag && kPos > n)
-            C[kPos-1]->remove(k);
-        else
-            C[kPos]->remove(k);
-        //TODO: думаю, из условия можно убрать флаг и C[kPos-1] заменить на C[n] в обоих случаях
-    }
-    return;
-}
-
-// A function to remove the idx-th key from this node - which is a leaf node
-void BTreeNode::removeFromLeaf (int idx)
-{
-    
-    // Move all the keys after the idx-th pos one place backward
-    for (int i=idx+1; i<n; ++i)
-        keys[i-1] = keys[i];
-    
-    // Reduce the count of keys
-    n--;
-    
-    return;
-}
-
-// A function to remove the idx-th key from this node - which is a non-leaf node
-void BTreeNode::removeFromNonLeaf(int idx)
-{
-    
-    int k = keys[idx];
-    
-    // If the child that precedes k (C[idx]) has atleast t keys,
-    // find the predecessor 'pred' of k in the subtree rooted at
-    // C[idx]. Replace k by pred. Recursively delete pred
-    // in C[idx]
-    if (C[idx]->n >= t)
-    {
-        int pred = getPred(idx);
-        keys[idx] = pred;
-        C[idx]->remove(pred);
     }
     
-    // If the child C[idx] has less that t keys, examine C[idx+1].
-    // If C[idx+1] has atleast t keys, find the successor 'succ' of k in
-    // the subtree rooted at C[idx+1]
-    // Replace k by succ
-    // Recursively delete succ in C[idx+1]
-    else if  (C[idx+1]->n >= t)
-    {
-        int succ = getSucc(idx);
-        keys[idx] = succ;
-        C[idx+1]->remove(succ);
+    //TODO: честно ли так поступать с вектором?
+    //TODO: если размер blokcs != n - ERROR
+    //TODO: может ли быть такое, что ownOffset нужен, а он пока невыставлен
+    //TODO: написать в write кучу проверок
+    
+    return offset;
+}
+
+
+
+BTreeNode *BTreeNode::readNode(int offset){
+    lseek(fileDesc, offset, SEEK_SET);
+    char *blockBuffer = new char[blockSize*(2*t - 1)];
+    
+    
+    read(fileDesc,&n, sizeof(n));
+    
+    read(fileDesc, &leaf, sizeof(leaf));
+    
+    read(fileDesc, keys, (2*t - 1)*sizeof(int));
+    
+    //TODO: поменять sizeif(int) на sizeof(*key) или n
+    
+    read(fileDesc, childrenOffsets, 2*t*sizeof(int));
+    
+    read(fileDesc, blockBuffer, n*blockSize);
+    
+    for (int i = 0; i < n; ++i) {
+        blocks.push_back(blockBuffer + i*blockSize);
     }
     
-    // If both C[idx] and C[idx+1] has less that t keys,merge k and all of C[idx+1]
-    // into C[idx]
-    // Now C[idx] contains 2t-1 keys
-    // Free C[idx+1] and recursively delete k from C[idx]
-    else
-    {
-        merge(idx);
-        C[idx]->remove(k);
-    }
-    return;
+    ownOffset = offset;
+    
+    
+    return NULL;
 }
 
-// A function to get predecessor of keys[idx]
-int BTreeNode::getPred(int idx)
+BTreeNode::BTreeNode(int t, int fileDesc, int blockSize):blockSize(blockSize), t(t), leaf(false), n(0), fileDesc(fileDesc)
 {
-    // Keep moving to the right most node until we reach a leaf
-    BTreeNode *cur=C[idx];
-    while (!cur->leaf)
-        cur = cur->C[cur->n];
-    
-    // Return the last key of the leaf
-    return cur->keys[cur->n-1];
+    ownOffset = -1;
+    keys = new int[2*t-1];
+    childrenOffsets = new int[2*t];
 }
 
-int BTreeNode::getSucc(int idx)
-{
-    
-    // Keep moving the left most node starting from C[idx+1] until we reach a leaf
-    BTreeNode *cur = C[idx+1];
-    while (!cur->leaf)
-        cur = cur->C[0];
-    
-    // Return the first key of the leaf
-    return cur->keys[0];
-}
 
-// A function to fill child C[idx] which has less than t-1 keys
-void BTreeNode::fill(int idx)
-{
-    
-    // If the previous child(C[idx-1]) has more than t-1 keys, borrow a key
-    // from that child
-    if (idx!=0 && C[idx-1]->n>=t)
-        borrowFromPrev(idx);
-    
-    // If the next child(C[idx+1]) has more than t-1 keys, borrow a key
-    // from that child
-    else if (idx!=n && C[idx+1]->n>=t)
-        borrowFromNext(idx);
-    
-    // Merge C[idx] with its sibling
-    // If C[idx] is the last child, merge it with with its previous sibling
-    // Otherwise merge it with its next sibling
-    else
-    {
-        if (idx != n)
-            merge(idx);
-        else
-            merge(idx-1);
-    }
-    return;
-}
-
-// A function to borrow a key from C[idx-1] and insert it
-// into C[idx]
-void BTreeNode::borrowFromPrev(int idx)
-{
-    
-    BTreeNode *child=C[idx];
-    BTreeNode *sibling=C[idx-1];
-    
-    // The last key from C[idx-1] goes up to the parent and key[idx-1]
-    // from parent is inserted as the first key in C[idx]. Thus, the  loses
-    // sibling one key and child gains one key
-    
-    // Moving all key in C[idx] one step ahead
-    for (int i=child->n-1; i>=0; --i)
-        child->keys[i+1] = child->keys[i];
-    
-    // If C[idx] is not a leaf, move all its child pointers one step ahead
-    if (!child->leaf)
-    {
-        for(int i=child->n; i>=0; --i)
-            child->C[i+1] = child->C[i];
-    }
-    
-    // Setting child's first key equal to keys[idx-1] from the current node
-    child->keys[0] = keys[idx-1];
-    
-    // Moving sibling's last child as C[idx]'s first child
-    if (!leaf)
-        child->C[0] = sibling->C[sibling->n];
-    
-    // Moving the key from the sibling to the parent
-    // This reduces the number of keys in the sibling
-    keys[idx-1] = sibling->keys[sibling->n-1];
-    
-    child->n += 1;
-    sibling->n -= 1;
-    
-    return;
-}
-
-// A function to borrow a key from the C[idx+1] and place
-// it in C[idx]
-void BTreeNode::borrowFromNext(int idx)
-{
-    
-    BTreeNode *child=C[idx];
-    BTreeNode *sibling=C[idx+1];
-    
-    // keys[idx] is inserted as the last key in C[idx]
-    child->keys[(child->n)] = keys[idx];
-    
-    // Sibling's first child is inserted as the last child
-    // into C[idx]
-    if (!(child->leaf))
-        child->C[(child->n)+1] = sibling->C[0];
-    
-    //The first key from sibling is inserted into keys[idx]
-    keys[idx] = sibling->keys[0];
-    
-    // Moving all keys in sibling one step behind
-    for (int i=1; i<sibling->n; ++i)
-        sibling->keys[i-1] = sibling->keys[i];
-    
-    // Moving the child pointers one step behind
-    if (!sibling->leaf)
-    {
-        for(int i=1; i<=sibling->n; ++i)
-            sibling->C[i-1] = sibling->C[i];
-    }
-    
-    // Increasing and decreasing the key count of C[idx] and C[idx+1]
-    // respectively
-    child->n += 1;
-    sibling->n -= 1;
-    
-    return;
-}
-
-// A function to merge C[idx] with C[idx+1]
-// C[idx+1] is freed after merging
-void BTreeNode::merge(int idx)
-{
-    BTreeNode *child = C[idx];
-    BTreeNode *sibling = C[idx+1];
-    
-    // Pulling a key from the current node and inserting it into (t-1)th
-    // position of C[idx]
-    child->keys[t-1] = keys[idx];
-    
-    // Copying the keys from C[idx+1] to C[idx] at the end
-    for (int i=0; i<sibling->n; ++i)
-        child->keys[i+t] = sibling->keys[i];
-    
-    // Copying the child pointers from C[idx+1] to C[idx]
-    if (!child->leaf)
-    {
-        for(int i=0; i<=sibling->n; ++i)
-            child->C[i+t] = sibling->C[i];
-    }
-    
-    // Moving all keys after idx in the current node one step before -
-    // to fill the gap created by moving keys[idx] to C[idx]
-    for (int i=idx+1; i<n; ++i)
-        keys[i-1] = keys[i];
-    
-    // Moving the child pointers after (idx+1) in the current node one
-    // step before
-    for (int i=idx+2; i<=n; ++i)
-        C[i-1] = C[i];
-    
-    // Updating the key count of child and the current node
-    child->n += sibling->n+1;
-    n--;
-    
-    // Freeing the memory occupied by sibling
-    delete(sibling);
-    return;
-}
-
-void BTreeNode::insertNonFull(int k)
+void BTreeNode::insertNonFull(int k, char *block)
 {
     // Initialize index as index of rightmost element
     int i = n-1;
@@ -327,7 +105,10 @@ void BTreeNode::insertNonFull(int k)
         
         // Insert the new key at found location
         keys[i+1] = k;
+        blocks[i+1] = block;
         n = n+1;
+        writeNode(ownOffset);
+        
     }
     else // If this node is not leaf
     {
@@ -336,24 +117,26 @@ void BTreeNode::insertNonFull(int k)
             i--;
         
         // See if the found child is full
-        if (C[i+1]->n == 2*t-1)
+        BTreeNode child(t, fileDesc, blockSize);
+        child.readNode(childrenOffsets[i+1]);
+        
+        if (child.n == 2*t-1)
         {
-            // If the child is full, then split it
-            splitChild(i+1, C[i+1]);
+            std::cout << "NOT IMPLEMENTED"<<std::endl;
+
+            //splitChild(i+1, C[i+1]);
             
-            // After split, the middle key of C[i] goes up and
-            // C[i] is splitted into two.  See which of the two
-            // is going to have the new key
-            if (keys[i+1] < k)
-                i++;
+            //if (keys[i+1] < k)
+            //    i++;
+            
         }
-        C[i+1]->insertNonFull(k);
+        child.insertNonFull(k, block);
     }
 }
 
 // A utility function to split the child y of this node
 // Note that y must be full when this function is called
-void BTreeNode::splitChild(int i, BTreeNode *y)
+/*void BTreeNode::splitChild(int i, BTreeNode *y)
 {
     // Create a new node which is going to store (t-1) keys
     // of y
@@ -392,6 +175,7 @@ void BTreeNode::splitChild(int i, BTreeNode *y)
     
     // Increment count of keys in this node
     n = n + 1;
+    //TODO:  зактнуть на диск сбея y and z
 }
 
 // Function to traverse all nodes in a subtree rooted with this node
@@ -399,8 +183,7 @@ void BTreeNode::traverse()
 {
     // There are n keys and n+1 children, travers through n keys
     // and first n children
-    int i;
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         // If this is not leaf, then before printing key[i],
         // traverse the subtree rooted with child C[i].
@@ -432,4 +215,4 @@ BTreeNode *BTreeNode::search(int k)
     
     // Go to the appropriate child
     return C[i]->search(k);
-}
+}*/
