@@ -11,12 +11,16 @@
 
 #include <stdio.h>
 #include <vector>
-#include <map>
+#include <string>
 #include<iostream>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+
+#include "PageAllocator.h"
+
+
 
 // A BTree node
 class BTreeNode
@@ -40,21 +44,23 @@ public:
     
     //TODO: добавить эти параметры в конструктор
     //TODO: или везде вектора или массивы
+    PageAllocator *pageAllocator;
     
-    
-
+    void printKeys();
+    void printChOffsets();
+    void printBlocks();
     
     int writeNode(int offset);
     
     BTreeNode *readNode(int offset);
     
-    BTreeNode(int _t,int fileDesc, int blockSize);   // Constructor
+    BTreeNode(int t,int fileDesc, int blockSize, PageAllocator *pageAlloc);   // Constructor
     
     // A function to traverse all nodes in a subtree rooted with this node
     void traverse();
     
     // A function to search a key in subtree rooted with this node.
-    BTreeNode *search(int k);   // returns NULL if k is not present.
+    char *search(int k);   // returns NULL if k is not present.
     
     // A function that returns the index of the first key that is greater
     // or equal to k
@@ -68,7 +74,7 @@ public:
     // A utility function to split the child y of this node. i is index
     // of y in child array C[].  The Child y must be full when this
     // function is called
-    void splitChild(int i, BTreeNode *y);
+    void splitChild(int i);
     
     // A wrapper function to remove the key k in subtree rooted with
     // this node.

@@ -25,77 +25,97 @@ int main()
 {
     
     int tree_t = 2;
-    int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*4 + 2*tree_t*4 + (2*tree_t-1)*32;//80t - 39
     int blockSize = 32;
+    int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*4 + 2*tree_t*4 + (2*tree_t-1)*blockSize;//80t - 39
+    int dbSize =102400;
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!10";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!20";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!30";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!40";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!50";
-    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!60";
+    
+    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!100";
+    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!200";
+    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!300";
+    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!400";
+    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!500";
+    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!150";
+    char c7[100] = "horseporn!!!!!!!!!!!!!!!!!!!!110";
+    char c8[100] = "horseporn!!!!!!!!!!!!!!!!!!!!120";
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
-    write(file, c1, 1024);
+    
+    PageAllocator *pageAlloc = new PageAllocator(file, nodeSizeOnDisk);
+    
+    write(file, c1, dbSize);
     lseek(file, 0, SEEK_SET);
     
     
-    BTreeNode head(tree_t, file, blockSize);
+    int headOffset = pageAlloc->allocatePage();
+    int leftOffset = pageAlloc->allocatePage();
+    int midOffset = pageAlloc->allocatePage();
+    int rightOffset = pageAlloc->allocatePage();
+    
+    cout<<headOffset<<endl;
+    cout<<leftOffset<<endl;
+    cout<<midOffset<<endl;
+    cout<<rightOffset<<endl<<endl;
+
+    
+    BTreeNode head(tree_t, file, blockSize, pageAlloc);
     head.keys[0] = 200;
     head.keys[1] = 400;
     
-    head.childrenOffsets[0] = nodeSizeOnDisk;
-    head.childrenOffsets[1] = 2*nodeSizeOnDisk;
-    head.childrenOffsets[2] = 3*nodeSizeOnDisk;
+    head.childrenOffsets[0] = leftOffset;
+    head.childrenOffsets[1] = midOffset;
+    head.childrenOffsets[2] = rightOffset;
 
-    head.blocks.push_back(c2);
-    head.blocks.push_back(c4);
+    head.blocks[0] = c2;
+    head.blocks[1] = c4;
     
     head.n = 2;
     head.leaf = false;
-    head.writeNode(0);
+    head.writeNode(headOffset);
     
     
-    BTreeNode left(tree_t, file, blockSize);
+    BTreeNode left(tree_t, file, blockSize, pageAlloc);
     left.keys[0] = 100;
-    left.blocks.push_back(c1);
-    left.n = 1;
+    left.keys[1] = 110;
+    left.keys[2] = 120;
+    left.blocks[0] = c1;
+    left.blocks[1] = c7;
+    left.blocks[2] = c8;
+    left.n = 3;
     left.leaf = true;
-    left.writeNode(nodeSizeOnDisk);
+    left.writeNode(leftOffset);
     
-    BTreeNode mid(tree_t, file, blockSize);
+    BTreeNode mid(tree_t, file, blockSize, pageAlloc);
     mid.keys[0] = 300;
-    mid.blocks.push_back(c3);
+    mid.blocks[0] = c3;
     mid.n = 1;
     mid.leaf = true;
-    mid.writeNode(2*nodeSizeOnDisk);
+    mid.writeNode(midOffset);
     
-    BTreeNode right(tree_t, file, blockSize);
+    BTreeNode right(tree_t, file, blockSize, pageAlloc);
     right.keys[0] = 500;
-    right.blocks.push_back(c5);
+    right.blocks[0] = c5;
     right.n = 1;
     right.leaf = true;
-    right.writeNode(3*nodeSizeOnDisk);
+    right.writeNode(rightOffset);
     
-    head.insertNonFull(150, c6);
+    //
+    //head.printBlocks();
+    
+    //head.insertNonFull(150, c6);
+
+    cout << string(head.search(500), 32)<<endl<<endl;
     
     //cout<< "offset "<<lseek(file, 0, SEEK_CUR)<<endl;
     //cout<< "suggoffset "<<4*nodeSizeOnDisk<<endl;
     
-    BTreeNode c(tree_t,  file, blockSize);
-    c.readNode(1*nodeSizeOnDisk);
-    
-    
-    cout << c.keys[0]<<endl;
-    cout << c.keys[1]<<endl<<endl;
     
     //cout << c.childrenOffsets[0]<<endl;
     //cout << c.childrenOffsets[1]<<endl;
     //cout << c.childrenOffsets[2]<<endl<<endl;
 
-    cout << string(c.blocks[0], 32)<<endl;
-    cout << string(c.blocks[1], 32)<<endl<<endl;
-    
-    cout<< "is leaf "<<c.leaf<<endl;
+    //cout << string(head.blocks[0], 32)<<endl;
+    //cout << string(c.blocks[1], 32)<<endl<<endl;
+    //cout<< "is leaf "<<c.leaf<<endl;
     return 0;
 }
