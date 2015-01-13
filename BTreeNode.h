@@ -17,11 +17,12 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <utility>
 
 #include "PageAllocator.h"
 
 
-
+using namespace std;
 // A BTree node
 class BTreeNode
 {
@@ -30,11 +31,11 @@ public:
     int n;     // Current number of keys
     bool leaf; // Is true when node is leaf. Otherwise false
     
-    int *keys;  // An array of keys
     int *childrenOffsets; // An array of child pointers
     
+    vector<pair<int, char*> > keysValues;
+    
     int blockSize;//memory block size
-    std::vector<char *> blocks;//memory blocks
     
     //std::map<int, BTreeNode *> littleNodeCache;
     
@@ -90,11 +91,11 @@ public:
     
     // A function to get the predecessor of the key- where the key
     // is present in the idx-th position in the node
-    int getPred(int idx);
+    pair<int, char*>  getPred(int idx);
     
     // A function to get the successor of the key- where the key
     // is present in the idx-th position in the node
-    int getSucc(int idx);
+    pair<int, char*>  getSucc(int idx);
     
     // A function to fill up the child node present in the idx-th
     // position in the C[] array if that child has less than t-1 keys

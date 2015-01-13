@@ -12,15 +12,16 @@
 #include <stdio.h>
 
 class PageAllocator{
-    
+public:   
     int fileDesc;
     int pageSize;
     
     int blocksCount;
     
-public:
+
     
     PageAllocator(int fileDesc, int pageSize);
+    PageAllocator();
     
     int allocatePage();
 };
