@@ -16,7 +16,7 @@ using namespace std;
 void BTreeNode::printKeys(){
     cout<< "This is my key"<<endl;
     for (int i = 0 ; i < n ; ++i) {
-        cout<< keysValues[i].first<<endl;
+        cout<< keysValues[i].first.data<<endl;
     }
     cout<< "ENd of ket"<<endl<<endl;
 }
@@ -50,16 +50,19 @@ int BTreeNode::writeNode(int offset ){
     
 
     //потом пишем ключи
-    vector<int> keys(2*t -1);
+    vector<Key> keys(2*t -1);
     for (int i = 0; i < keysValues.size(); ++i) {
         keys[i] = keysValues[i].first;
     }
     
-    write(fileDesc, &keys[0], (2*t - 1)*sizeof(int));
+    write(fileDesc, &keys[0], (2*t - 1)*sizeof(Key));
     
     //потом потомков
     //для листев эта процедура кидает в файл треш из помяти
-    write(fileDesc,childrenOffsets, 2*t*sizeof(int));
+    if (!childrenOffsets.empty()) {
+        write(fileDesc,&childrenOffsets[0], 2*t*sizeof(int));
+    }
+    
     
     
     //затем блоки
@@ -92,17 +95,17 @@ BTreeNode *BTreeNode::readNode(int offset){
     
     read(fileDesc, &leaf, sizeof(leaf));
     
-    vector<int> keys(2*t -1);
-    read(fileDesc, &keys[0], (2*t - 1)*sizeof(int));
+    vector<Key> keys(2*t -1);
+    read(fileDesc, &keys[0], (2*t - 1)*sizeof(Key));
     
     for (int i = 0; i < keysValues.size(); ++i) {
         keysValues[i].first = keys[i];
     }
     
     //TODO: поменять sizeif(int) на sizeof(*key) или n
-    
-    read(fileDesc, childrenOffsets, 2*t*sizeof(int));
-    
+    if (!childrenOffsets.empty()) {
+        read(fileDesc, &childrenOffsets[0], 2*t*sizeof(int));
+    }
     read(fileDesc, blockBuffer, n*blockSize);
     for (int i = 0; i < n; ++i) {
         keysValues[i].second =blockBuffer + i*blockSize;
@@ -114,17 +117,17 @@ BTreeNode *BTreeNode::readNode(int offset){
     return NULL;
 }
 
-BTreeNode::BTreeNode(int t, int fileDesc, int blockSize, PageAllocator *pageAlloc):blockSize(blockSize), t(t), leaf(false), n(0), fileDesc(fileDesc), pageAllocator(pageAlloc), keysValues(std::vector<pair<int, char *> >(2*t - 1))
+BTreeNode::BTreeNode(int t, int fileDesc, int blockSize, PageAllocator *pageAlloc):blockSize(blockSize), t(t), leaf(false), n(0), fileDesc(fileDesc), pageAllocator(pageAlloc), keysValues(std::vector<pair<Key, char *> >(2*t - 1)), childrenOffsets(std::vector<int>(2*t, -1))
 {
     
     ownOffset = -1;
-    childrenOffsets = new int[2*t];
+    //childrenOffsets = new int[2*t];
     n = 0;
 }
 
 // A utility function that returns the index of the first key that is
 // greater than or equal to k
-int BTreeNode::findKey(int k)
+int BTreeNode::findKey(Key k)
 {
     int idx=0;
     while (idx<n && keysValues[idx].first < k)
@@ -143,7 +146,7 @@ int BTreeNode::findKey(int k)
 
 
 // A function to remove the key k from the sub-tree rooted with this node
-void BTreeNode::remove(int k)
+void BTreeNode::remove(Key k)
 {
     int idx = findKey(k);
     
@@ -164,7 +167,7 @@ void BTreeNode::remove(int k)
         // If this node is a leaf node, then the key is not present in tree
         if (leaf)
         {
-            std::cout << "The key "<< k <<" is does not exist in the tree\n";
+            std::cout << "The key "<< k.data <<" is does not exist in the tree\n";
             return;
         }
         
@@ -213,7 +216,7 @@ void BTreeNode::removeFromLeaf (int idx)
 void BTreeNode::removeFromNonLeaf(int idx)
 {
     
-    int k = keysValues[idx].first;
+    Key k = keysValues[idx].first;
     
     // If the child that precedes k (C[idx]) has atleast t keys,
     // find the predecessor 'pred' of k in the subtree rooted at
@@ -226,7 +229,7 @@ void BTreeNode::removeFromNonLeaf(int idx)
     childGrea.readNode(childrenOffsets[idx + 1]);
     if (childLess.n >= t)
     {
-        pair<int, char*> pred = getPred(idx);
+        pair<Key, char*> pred = getPred(idx);
         keysValues[idx] = pred;
         childLess.remove(pred.first);
         writeNode(ownOffset);
@@ -240,7 +243,7 @@ void BTreeNode::removeFromNonLeaf(int idx)
     // Recursively delete succ in C[idx+1]
     else if  (childGrea.n >= t)
     {
-        pair<int, char*>  succ = getSucc(idx);
+        pair<Key, char*>  succ = getSucc(idx);
         keysValues[idx] = succ;
         childGrea.remove(succ.first);
         writeNode(ownOffset);
@@ -262,7 +265,7 @@ void BTreeNode::removeFromNonLeaf(int idx)
 }
 
 // A function to get predecessor of keys[idx]
-pair<int, char*> BTreeNode::getPred(int idx)
+pair<Key, char*> BTreeNode::getPred(int idx)
 {
     // Keep moving to the right most node until we reach a leaf
     BTreeNode curr(t, fileDesc, blockSize, pageAllocator);
@@ -275,7 +278,7 @@ pair<int, char*> BTreeNode::getPred(int idx)
     return curr.keysValues[curr.n-1];
 }
 
-pair<int, char*>  BTreeNode::getSucc(int idx)
+pair<Key, char*>  BTreeNode::getSucc(int idx)
 {
     
     // Keep moving the left most node starting from C[idx+1] until we reach a leaf
@@ -291,12 +294,35 @@ pair<int, char*>  BTreeNode::getSucc(int idx)
 // A function to fill child C[idx] which has less than t-1 keys
 void BTreeNode::fill(int idx)
 {
-    
     BTreeNode childLess(t, fileDesc, blockSize, pageAllocator);
-    childLess.readNode(childrenOffsets[idx - 1]);
-    
     BTreeNode childGrea(t, fileDesc, blockSize, pageAllocator);
-    childGrea.readNode(childrenOffsets[idx + 1]);
+    
+    bool borrowed = false;
+    
+    if (idx!=0){
+        childLess.readNode(childrenOffsets[idx - 1]);
+        if (childLess.n>=t) {
+            borrowFromPrev(idx);
+            borrowed =true;
+        }
+    }
+    
+    if (!borrowed && idx!=n){
+        childGrea.readNode(childrenOffsets[idx + 1]);
+        if (childGrea.n>=t){
+            borrowFromNext(idx);
+            borrowed = true;
+        }
+    }
+    
+    if (!borrowed) {
+        if (idx != n)
+            merge(idx);
+        else
+            merge(idx-1);
+    }
+    return;
+    
     // If the previous child(C[idx-1]) has more than t-1 keys, borrow a key
     // from that child
     if (idx!=0 && childLess.n>=t)
@@ -465,7 +491,7 @@ void BTreeNode::merge(int idx)
     return;
 }
 
-void BTreeNode::insertNonFull(int k, char *block)
+void BTreeNode::insertNonFull(Key k, char *block)
 {
     // Initialize index as index of rightmost element
     int i = n-1;
@@ -590,7 +616,7 @@ void BTreeNode::traverse()
 
 
 
-char *BTreeNode::search(int k)
+char *BTreeNode::search(Key k)
 {
     // Find the first key greater than or equal to k
     int i = 0;
@@ -609,4 +635,15 @@ char *BTreeNode::search(int k)
     BTreeNode child(t, fileDesc, blockSize, pageAllocator);
     child.readNode(childrenOffsets[i]);
     return child.search(k);
+}
+
+
+
+
+int keycmp(struct Key *a, struct Key *b) { //returns -1 if less, 0 if equal, 1 if more
+    int res = memcmp(&(a->data), &(b->data), min(a->size, b->size));
+    if (res == 0) {
+        res = a->size - b->size;
+    }
+    return res;
 }

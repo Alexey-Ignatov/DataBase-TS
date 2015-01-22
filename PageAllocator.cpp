@@ -8,7 +8,7 @@
 
 #include "PageAllocator.h"
 
-PageAllocator::PageAllocator(): fileDesc(0), blocksCount(0), pageSize(0){}
+//PageAllocator::PageAllocator(): fileDesc(0), blocksCount(0), pageSize(0){}
 
 
 PageAllocator::PageAllocator(int fileDesc, int pageSize): fileDesc(fileDesc), pageSize(pageSize), blocksCount(0){}

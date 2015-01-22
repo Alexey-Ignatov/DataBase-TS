@@ -14,6 +14,14 @@
 
 #include "BTreeNode.h"
 
+struct DB *dbcreate(const char *path, const struct DBC conf);
+
+extern "C" int db_close(struct DB *db);
+extern "C" int db_del(const struct DB *, void *, size_t);
+extern "C" int db_get(const struct DB *, void *, size_t, void **, size_t *);
+extern "C" int db_put(const struct DB *, void *, size_t, void * , size_t  );
+
+
 class BTree
 {
     
@@ -30,19 +38,28 @@ public:
 
     
     // Constructor (Initializes tree as empty)
-    BTree(int _t, std::string path, int blockSize, int dbSize);
+    BTree(int _t, std::string path, int blockSize, int dbSize, int pageSize);
 
     void traverse();
     
     // function to search a key in this tree
-    char* search(int k);
+    char* search(Key k);
     
     // The main function that inserts a new key in this B-Tree
-    void insert(int k, char *block);
+    void insert(Key k, char *block);
     
     // The main function that removes a new key in thie B-Tree
-    void remove(int k);
+    void remove(Key k);
     //TODO: чтобы избежать фокусов с тем, что я кручу права доступа, нужно, например, делать френд класс для тестировщика
+};
+
+extern "C" struct DB {
+    BTree db;
+};
+
+struct DBC {
+    size_t db_size;
+    size_t chunk_size;
 };
 
 

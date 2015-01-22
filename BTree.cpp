@@ -8,16 +8,29 @@
 
 #include "BTree.h"
 
-BTree::BTree(int _t, std::string path, int blockSize, int dbSize): blockSize( blockSize), dbSize(dbSize), root(BTreeNode(_t, 0, blockSize, NULL))
+/*struct DB *dbcreate(const char *path, const struct DBC conf){
+    struct DB *db;
+    
+    db->db = BTree(conf.)
+}*/
+
+
+
+
+
+
+
+
+
+
+BTree::BTree(int _t, std::string path, int blockSize, int dbSize, int pageSize): blockSize( blockSize), dbSize(dbSize), root(BTreeNode(_t, 0, blockSize, NULL)), pageAllocator(PageAllocator(-1, pageSize))
 {
     t = _t;
     fileDesc = open(path.c_str(), O_RDWR | O_CREAT);
     write(fileDesc, &t, dbSize);
     lseek(fileDesc, 0, SEEK_SET);
-    int nodeSizeOnDisk = 4 + 1 +(2*t -1)*4 + 2*t*4 + (2*t-1)*blockSize;
     
     pageAllocator.fileDesc = fileDesc;
-    pageAllocator.pageSize = nodeSizeOnDisk;
     
     root.pageAllocator = &pageAllocator;
 }
@@ -28,20 +41,20 @@ void BTree::traverse()
 }
 
 
-char* BTree::search(int k){
+char* BTree::search(Key k){
     return (root.n >0)? NULL : root.search(k);
 }
 
 
 
 // The main function that inserts a new key in this B-Tree
-void BTree::insert(int k, char *block)
+void BTree::insert(Key k, char *block)
 {
     // If tree is empty
     if (root.n ==0)
     {
         // Allocate memory for root
-        root.keysValues[0] = pair<int, char*>(k, block);
+        root.keysValues[0] = pair<Key, char*>(k, block);
         root.leaf = true;
         root.n++;
         root.fileDesc = fileDesc;
@@ -90,7 +103,7 @@ void BTree::insert(int k, char *block)
 }
 
 
-void BTree::remove(int k)
+void BTree::remove(Key k)
 {
     if (root.n ==0)
     {
