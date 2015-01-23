@@ -11,55 +11,62 @@
 
 #include <stdio.h>
 #include <string>
+#include <stdlib.h>
 
 #include "BTreeNode.h"
-
-struct DB *dbcreate(const char *path, const struct DBC conf);
-
-extern "C" int db_close(struct DB *db);
-extern "C" int db_del(const struct DB *, void *, size_t);
-extern "C" int db_get(const struct DB *, void *, size_t, void **, size_t *);
-extern "C" int db_put(const struct DB *, void *, size_t, void * , size_t  );
-
 
 class BTree
 {
     
 public:
-    BTreeNode root; // Pointer to root node
-    int t;  // Minimum degree
+    BTreeNode root;
+    int t;
     
     int dbSize;
     int fileDesc;
     
     PageAllocator pageAllocator;
-    
 
-    
-    // Constructor (Initializes tree as empty)
     BTree(int _t, std::string path, int dbSize, int pageSize);
 
     void traverse();
-    
-    // function to search a key in this tree
     Record search(Key k);
-    
-    // The main function that inserts a new key in this B-Tree
     void insert(Key k, Record block);
-    
-    // The main function that removes a new key in thie B-Tree
     void remove(Key k);
-    //TODO: чтобы избежать фокусов с тем, что я кручу права доступа, нужно, например, делать френд класс для тестировщика
+    
 };
 
-extern "C" struct DB {
-    BTree db;
-};
-
-struct DBC {
-    size_t db_size;
-    size_t chunk_size;
-};
-
+extern "C" {
+    int Cdel(struct DB *db, struct DBT *key);
+    int Cget(struct DB *db, struct DBT *key, struct DBT *data);
+    int Cput(struct DB *db, struct DBT *key, struct DBT *data);
+    
+    
+    struct DB *dbcreate(const char *, const struct DBC);
+    int db_close(struct DB *db);
+    int db_del(struct DB *, void *, size_t);
+    int db_get(struct DB *, void *, size_t, void **, size_t *);
+    int db_put(struct DB *, void *, size_t, void * , size_t  );
+    
+    struct DBT {
+        void  *data;
+        size_t size;
+    };
+    
+    struct DB {
+        int test = 5;
+        int (*close)(struct DB *db);
+        int (*del)(struct DB *db, struct DBT *key);
+        int (*get)(struct DB *db, struct DBT *key, struct DBT *data);
+        int (*put)(struct DB *db, struct DBT *key, struct DBT *data);
+        BTree *bTree;
+        
+    };
+    struct DBC {
+        size_t db_size;
+        size_t chunk_size;
+    };
+    
+}
 
 #endif /* defined(__DataBaseTS__BTree__) */

@@ -31,11 +31,11 @@ TEST (BTreeNode, write_read0)
     int t = 3;
      
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!10";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!20";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!30";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!40";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!50";
+    char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!10";
+    char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!20";
+    char c3[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!30";
+    char c4[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!40";
+    char c5[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!50";
     
     int file = open("./ForGTests/Test1NodereadNodeWrite.txt", O_RDWR | O_CREAT);
     
@@ -101,11 +101,11 @@ TEST (BTreeNode, write_read1)
     int t = 3;
      
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!10";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!20";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!30";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!40";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!50";
+    char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!10";
+    char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!20";
+    char c3[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!30";
+    char c4[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!40";
+    char c5[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!50";
     
     int file = open("./ForGTests/Test1NodereadNodeWrite.txt", O_RDWR | O_CREAT);
     
@@ -164,12 +164,12 @@ TEST (BTreeNode, simple_insert0)
     int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*sizeof(Key) + 2*tree_t*4 + (2*tree_t-1)*sizeof(Record);//80t - 39
      
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!10";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!20";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!30";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!40";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!50";
-    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!60";
+    char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!10";
+    char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!20";
+    char c3[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!30";
+    char c4[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!40";
+    char c5[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!50";
+    char c6[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!60";
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
     write(file, c1, 1024);
@@ -232,12 +232,12 @@ TEST (BTreeNode, simple_insert1)
     int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*sizeof(Key) + 2*tree_t*4 + (2*tree_t-1)*sizeof(Record);//80t - 39
      
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!10";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!20";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!30";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!40";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!50";
-    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!60";
+    char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!10";
+    char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!20";
+    char c3[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!30";
+    char c4[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!40";
+    char c5[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!50";
+    char c6[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!!60";
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
     write(file, c1, 1024);
@@ -302,14 +302,14 @@ TEST (BTreeNode, split_insert1)
     
     
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!100";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!200";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!300";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!400";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!500";
-    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!150";
-    char c7[100] = "horseporn!!!!!!!!!!!!!!!!!!!!110";
-    char c8[100] = "horseporn!!!!!!!!!!!!!!!!!!!!120";
+    char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!100";
+    char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!200";
+    char c3[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!300";
+    char c4[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!400";
+    char c5[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!500";
+    char c6[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!150";
+    char c7[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!110";
+    char c8[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!120";
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
     
@@ -406,14 +406,14 @@ TEST (BTreeNode, search0)
     int dbSize =102400;
     
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!100";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!200";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!300";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!400";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!500";
-    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!150";
-    char c7[100] = "horseporn!!!!!!!!!!!!!!!!!!!!110";
-    char c8[100] = "horseporn!!!!!!!!!!!!!!!!!!!!120";
+    char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!100";
+    char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!200";
+    char c3[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!300";
+    char c4[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!400";
+    char c5[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!500";
+    char c6[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!150";
+    char c7[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!110";
+    char c8[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!120";
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
     
@@ -485,14 +485,14 @@ TEST (BTreeNode, removeStillHead)
     int dbSize =102400;
     
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!100";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!200";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!300";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!400";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!500";
-    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!150";
-    char c7[100] = "horseporn!!!!!!!!!!!!!!!!!!!!110";
-    char c8[100] = "horseporn!!!!!!!!!!!!!!!!!!!!120";
+    char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!100";
+    char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!200";
+    char c3[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!300";
+    char c4[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!400";
+    char c5[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!500";
+    char c6[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!150";
+    char c7[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!110";
+    char c8[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!120";
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
     
@@ -585,13 +585,13 @@ TEST (BTree, simple_inserts)
     int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*sizeof(Key) + 2*tree_t*4 + (2*tree_t-1)*sizeof(Record);
     int dbSize =102400;
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!100";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!200";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!300";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!400";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!500";
-    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!600";
-    char c7[100] = "horseporn!!!!!!!!!!!!!!!!!!!!700";
+    char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!100";
+    char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!200";
+    char c3[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!300";
+    char c4[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!400";
+    char c5[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!500";
+    char c6[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!600";
+    char c7[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!700";
     
     
     

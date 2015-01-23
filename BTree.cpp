@@ -8,24 +8,101 @@
 
 #include "BTree.h"
 
-/*struct DB *dbcreate(const char *path, const struct DBC conf){
-    struct DB *db;
-    
-    db->db = BTree(conf.)
-}*/
 
+//*****************************************************************API************************************************************************
+
+int Cdel(struct DB *db, struct DBT *key){
+    Key toDel((char*) key->data, (int)key->size);
+    db->bTree->remove(toDel);
+    return 0;
+}
+
+
+int Cget(struct DB *db, struct DBT *key, struct DBT *data){
+    Key toGet((char*) key->data, (int)key->size);
+    Record answer = db->bTree->search(toGet);
+    
+    data->data = (char *)malloc(answer.getSize());
+    
+    memcpy( data->data, answer.getSrc(),answer.getSize() );
+    data->size = (size_t) answer.getSize();
+    return 1;
+}
+
+int Cput(struct DB *db, struct DBT *key, struct DBT *data){
+    Key keyPut((char*) key->data, (int)key->size);
+    Record dataPut((char*) data->data, (int)data->size);
+    db->bTree->insert(keyPut, dataPut);
+    return 1;
+}
+
+
+extern "C" struct DB *dbcreate(const char *path, const struct DBC conf){
+    struct DB *db = (struct DB *)malloc(sizeof(struct DB));
+    int tree_t = 15;
+    db->bTree =new BTree(tree_t, path,conf.db_size, conf.chunk_size );
+    db->put = Cput;
+    db->get = Cget;
+    db->del = Cdel;
+    db->close =db_close;
+    return db;
+}
+
+
+extern "C" int db_close(struct DB *db) {
+    db->close(db);
+    return 0;
+}
+
+extern "C" int db_del(struct DB *db, void *key, size_t key_len) {
+    struct DBT keyt = {
+        .data = key,
+        .size = key_len
+    };
+    return db->del(db, &keyt);
+}
+
+extern "C" int db_get(struct DB *db, void *key, size_t key_len, void **val, size_t *val_len) {
+    struct DBT keyt = {
+        .data = key,
+        .size = key_len
+    };
+    struct DBT valt = {0, 0};
+    int rc = db->get(db, &keyt, &valt);
+    *val = valt.data;
+    *val_len = valt.size;
+    return rc;
+}
+
+extern "C" int db_put(struct DB *db, void *key, size_t key_len, void *val, size_t val_len) {
+    struct DBT keyt = {
+        .data = key,
+        .size = key_len
+    };
+    struct DBT valt = {
+        .data = val,
+        .size = val_len
+    };
+    return db->put(db, &keyt, &valt);
+}
+
+//*****************************************************************BTREE************************************************************************
 
 BTree::BTree(int _t, std::string path, int dbSize, int pageSize):  dbSize(dbSize), root(BTreeNode(_t, 0, NULL)), pageAllocator(PageAllocator(-1, pageSize))
 {
+    char buf[1024];
     t = _t;
-    fileDesc = open(path.c_str(), O_RDWR | O_CREAT);
-    write(fileDesc, &t, dbSize);
+    
+    fileDesc = open(path.c_str(), O_RDWR | O_CREAT, 0777);
+    for (int i = 0 ; i<dbSize; i+=1024) {
+        write(fileDesc, buf, 1024);
+    }
+    
     lseek(fileDesc, 0, SEEK_SET);
-    
     pageAllocator.fileDesc = fileDesc;
-    
     root.pageAllocator = &pageAllocator;
 }
+
 
 void BTree::traverse()
 {
@@ -39,41 +116,33 @@ Record BTree::search(Key k){
 
 
 
-// The main function that inserts a new key in this B-Tree
 void BTree::insert(Key k, Record block)
 {
-    // If tree is empty
     if (root.n ==0)
     {
-        // Allocate memory for root
         root.keysValues[0] = pair<Key, Record>(k, block);
         root.leaf = true;
         root.n++;
         root.fileDesc = fileDesc;
         root.ownOffset = pageAllocator.allocatePage();
+        root.writeNode(root.ownOffset);
+        //cout<<"BTree::insert2"<<endl;
         
     }
-    else // If tree is not empty
+    else
     {
-        // If root is full, then tree grows in height
         if (root.n == 2*t-1)
         {
-            // Allocate memory for new root
             BTreeNode s = BTreeNode(t,fileDesc, &pageAllocator );
             s.leaf =false;
             s.n = 0;
             s.ownOffset = pageAllocator.allocatePage();
-            // Make old root as child of new root
+
             s.childrenOffsets[0] = root.ownOffset;
-            //s.n = 1;
             fflush(stdout);
-            //s.traverse();
-            // Split the old root and move 1 key to the new root
             s.splitChild(0);
             
             
-            // New root has two children now.  Decide which of the
-            // two children is going to have new key
             int i = 0;
             if (s.keysValues[0].first < k)
                 i++;
@@ -83,13 +152,10 @@ void BTree::insert(Key k, Record block)
             
             sChild.insertNonFull(k, block);
             
-            // Change root
-            //s.ownOffset = root.ownOffset;
             root = s;
             s.writeNode(s.ownOffset);
-            //TODO:
         }
-        else  // If root is not full, call insertNonFull for root
+        else
             root.insertNonFull(k, block);
     }
 }
@@ -103,11 +169,8 @@ void BTree::remove(Key k)
         return;
     }
     
-    // Call the remove function for root
     root.remove(k);
     
-    // If the root node has 0 keys, make its first child as the new root
-    //  if it has a child, otherwise set root as NULL
     if (root.n==0)
     {
         if (root.leaf){
@@ -121,4 +184,4 @@ void BTree::remove(Key k)
     }
     return;
 }
-//TODO: решить проблему с дефолтыми конструкторами, точнее с тем, что я их просто так насоздавал
+

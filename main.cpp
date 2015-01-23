@@ -22,76 +22,31 @@
 
 using namespace std;
 
-// Driver program to test above functions
 int main()
 {
-    /*int tree_t = 2;
-    int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*4 + 2*tree_t*4 + (2*tree_t-1)*MAXRECSIZE;//80t - 39
-    int dbSize =102400;
+    char *answerBuffer = new char[MAXRECSIZE];
     
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!300";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!200";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!300";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!400";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!500";
-    char c6[100] = "horseporn!!!!!!!!!!!!!!!!!!!!600";
-    char c7[100] = "horseporn!!!!!!!!!!!!!!!!!!!!700";
-    
-    
-    
-    BTree a(tree_t, "m.txt", dbSize);
-    a.insert(Key("100",3), c1);
-    a.insert(Key("200",3), c1);
-    a.insert(Key("300",3), c1);
-    a.insert(Key("400",3), c1);
-    /*a.insert(Key("500",3), c1);
-    a.insert(Key("600",3), c1);
-    a.insert(Key("700",3), c1);*/
+    struct DBC config = {0, 0};
+    config.chunk_size = 4*1024;
+    config.db_size = 128*1024;
 
-    //a.traverse();
+    struct DB* db = dbcreate("m.txt", config);
+    
+    size_t val_len = strlen("2B7a4364d8f42afDeF8");
+    size_t key_len = strlen("Sungaisarimah 1");
+    
+    
+    
+    db_put(db, (void*)"Sungaisarimah 1", key_len, (void*)"2B7a4364d8f42afDeF9", val_len);
+    db_put(db, (void*)"Sungaisarimah 1", key_len, (void*)"2B7a4364d8f42afDe10", val_len);
 
+    db_get(db, (void*)"Sungaisarimah 1", key_len, (void **)&answerBuffer, &val_len);
+    cout<<std::string(answerBuffer, val_len)<< std::endl;
+
+    db_put(db, (void*)"Sungaisarimah 1", key_len, (void*)"2B7a4364d8f42afDe11", val_len);
     
-    int t = 3;
-    
-    char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!10";
-    char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!20";
-    char c3[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!30";
-    char c4[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!40";
-    char c5[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!50";
-    
-    int file = open("./ForGTests/Test1NodereadNodeWrite.txt", O_RDWR | O_CREAT);
-    
-    write(file, c1, 1024);
-    lseek(file, 0, SEEK_SET);
-    
-    BTreeNode b(t, file, NULL);
-    b.keysValues[0].first = "12345";
-    b.keysValues[1].first = "12346";
-    b.keysValues[2].first = "12347";
-    b.keysValues[3].first = "12348";
-    b.keysValues[4].first = "12349";
-    
-    b.childrenOffsets[0] = 4320;
-    b.childrenOffsets[1] = 4321;
-    b.childrenOffsets[2] = 4322;
-    b.childrenOffsets[3] = 4323;
-    b.childrenOffsets[4] = 4324;
-    b.childrenOffsets[5] = 4325;
-    
-    b.keysValues[0].second = c1;
-    b.keysValues[1].second = c2;
-    b.keysValues[2].second = c3;
-    b.keysValues[3].second = c4;
-    b.keysValues[4].second = c5;
-    
-    b.n = 5;
-    b.leaf = true;
-    
-    b.writeNode(0);
-    
-    BTreeNode c(t, file, NULL);
-    c.readNode(0);
-    
-    
+    db_get(db, (void*)"Sungaisarimah 1", key_len, (void **)&answerBuffer, &val_len);
+    cout<<std::string(answerBuffer, val_len);
+
     return 0;
 }
