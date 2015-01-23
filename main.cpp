@@ -26,8 +26,7 @@ using namespace std;
 int main()
 {
     /*int tree_t = 2;
-    int blockSize = 32;
-    int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*4 + 2*tree_t*4 + (2*tree_t-1)*blockSize;//80t - 39
+    int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*4 + 2*tree_t*4 + (2*tree_t-1)*MAXRECSIZE;//80t - 39
     int dbSize =102400;
     
     char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!300";
@@ -40,7 +39,7 @@ int main()
     
     
     
-    BTree a(tree_t, "m.txt", blockSize, dbSize);
+    BTree a(tree_t, "m.txt", dbSize);
     a.insert(Key("100",3), c1);
     a.insert(Key("200",3), c1);
     a.insert(Key("300",3), c1);
@@ -53,7 +52,6 @@ int main()
 
     
     int t = 3;
-    int blockSize = 32;
     
     char c1[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!10";
     char c2[100] = "horseporn!!!!!!!!!!!!!!!!!!!!!20";
@@ -66,7 +64,7 @@ int main()
     write(file, c1, 1024);
     lseek(file, 0, SEEK_SET);
     
-    BTreeNode b(t, file, blockSize, NULL);
+    BTreeNode b(t, file, NULL);
     b.keysValues[0].first = "12345";
     b.keysValues[1].first = "12346";
     b.keysValues[2].first = "12347";
@@ -91,7 +89,7 @@ int main()
     
     b.writeNode(0);
     
-    BTreeNode c(t, file, blockSize, NULL);
+    BTreeNode c(t, file, NULL);
     c.readNode(0);
     
     

@@ -30,7 +30,6 @@ public:
     int t;  // Minimum degree
     
     int dbSize;
-    int blockSize;
     int fileDesc;
     
     PageAllocator pageAllocator;
@@ -38,15 +37,15 @@ public:
 
     
     // Constructor (Initializes tree as empty)
-    BTree(int _t, std::string path, int blockSize, int dbSize, int pageSize);
+    BTree(int _t, std::string path, int dbSize, int pageSize);
 
     void traverse();
     
     // function to search a key in this tree
-    char* search(Key k);
+    Record search(Key k);
     
     // The main function that inserts a new key in this B-Tree
-    void insert(Key k, char *block);
+    void insert(Key k, Record block);
     
     // The main function that removes a new key in thie B-Tree
     void remove(Key k);

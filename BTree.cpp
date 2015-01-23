@@ -15,15 +15,7 @@
 }*/
 
 
-
-
-
-
-
-
-
-
-BTree::BTree(int _t, std::string path, int blockSize, int dbSize, int pageSize): blockSize( blockSize), dbSize(dbSize), root(BTreeNode(_t, 0, blockSize, NULL)), pageAllocator(PageAllocator(-1, pageSize))
+BTree::BTree(int _t, std::string path, int dbSize, int pageSize):  dbSize(dbSize), root(BTreeNode(_t, 0, NULL)), pageAllocator(PageAllocator(-1, pageSize))
 {
     t = _t;
     fileDesc = open(path.c_str(), O_RDWR | O_CREAT);
@@ -41,20 +33,20 @@ void BTree::traverse()
 }
 
 
-char* BTree::search(Key k){
-    return (root.n >0)? NULL : root.search(k);
+Record BTree::search(Key k){
+    return root.search(k);
 }
 
 
 
 // The main function that inserts a new key in this B-Tree
-void BTree::insert(Key k, char *block)
+void BTree::insert(Key k, Record block)
 {
     // If tree is empty
     if (root.n ==0)
     {
         // Allocate memory for root
-        root.keysValues[0] = pair<Key, char*>(k, block);
+        root.keysValues[0] = pair<Key, Record>(k, block);
         root.leaf = true;
         root.n++;
         root.fileDesc = fileDesc;
@@ -67,7 +59,7 @@ void BTree::insert(Key k, char *block)
         if (root.n == 2*t-1)
         {
             // Allocate memory for new root
-            BTreeNode s = BTreeNode(t,fileDesc, blockSize, &pageAllocator );
+            BTreeNode s = BTreeNode(t,fileDesc, &pageAllocator );
             s.leaf =false;
             s.n = 0;
             s.ownOffset = pageAllocator.allocatePage();
@@ -86,7 +78,7 @@ void BTree::insert(Key k, char *block)
             if (s.keysValues[0].first < k)
                 i++;
             
-            BTreeNode sChild =BTreeNode(t,fileDesc, blockSize, &pageAllocator );
+            BTreeNode sChild =BTreeNode(t,fileDesc, &pageAllocator );
             sChild.readNode(s.childrenOffsets[i]);
             
             sChild.insertNonFull(k, block);
@@ -119,9 +111,9 @@ void BTree::remove(Key k)
     if (root.n==0)
     {
         if (root.leaf){
-            root = BTreeNode(t,fileDesc, blockSize, &pageAllocator );
+            root = BTreeNode(t,fileDesc, &pageAllocator );
         }else{
-            BTreeNode minChild =BTreeNode(t,fileDesc, blockSize, &pageAllocator );
+            BTreeNode minChild =BTreeNode(t,fileDesc, &pageAllocator );
             minChild.readNode(root.childrenOffsets[0]);
             root = minChild;
         }

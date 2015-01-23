@@ -21,16 +21,70 @@
 #include <utility>
 #include <string.h>
 #include <algorithm>
+#include "string"
 
 #include "PageAllocator.h"
 
 #define MAXKEYSIZE 40
+#define MAXRECSIZE 100
 //#define min(a, b) ((a) < (b) ? (a) : (b))
 //#define max(a, b) ((a) > (b) ? (a) : (b))
 
 using namespace std;
 // A BTree node
-struct Key;
+
+class Key {
+public:
+    int size;
+    char data[MAXKEYSIZE];
+    
+    bool operator <(const Key& key) const;
+    bool operator ==(const Key& key) const;
+    bool operator >(const Key& key) const;
+    Key& operator=(const Key& other);
+    
+    Key(const char *key, int size);
+    Key(const Key& other);
+    Key();
+    Key(const char *keyStr);
+};
+
+class Record {
+    int size;
+    char data[MAXRECSIZE];
+public:    
+    Record(const char *record, int recSize){
+        size = recSize;
+        if(size == 0)
+            return;
+        memcpy(data, record, recSize);
+    };
+    
+    const char *getSrc()const{
+        return data;
+    }
+    
+    int getSize(){
+        return size;
+    }
+    
+    Record& operator=(const Record& other){
+        size = other.size;
+        if(size == 0){
+            return *this;
+        }
+        memcpy(data, other.data, other.size);
+        return *this;
+    }
+    
+    Record(): size(0){};
+    
+    bool empty()const{
+        return size == 0;
+    }
+};
+
+
 class BTreeNode
 {
 public:
@@ -40,9 +94,7 @@ public:
     
     //int *childrenOffsets; // An array of child pointers
     std::vector<int >childrenOffsets;
-    vector<pair<Key, char*> > keysValues;
-    
-    int blockSize;//memory block size
+    vector<pair<Key, Record> > keysValues;
     
     //std::map<int, BTreeNode *> littleNodeCache;
     
@@ -62,13 +114,13 @@ public:
     
     BTreeNode *readNode(int offset);
     
-    BTreeNode(int t,int fileDesc, int blockSize, PageAllocator *pageAlloc);   // Constructor
+    BTreeNode(int t,int fileDesc, PageAllocator *pageAlloc);   // Constructor
     
     // A function to traverse all nodes in a subtree rooted with this node
     void traverse();
     
     // A function to search a key in subtree rooted with this node.
-    char *search(Key k);   // returns NULL if k is not present.
+    Record search(Key k);   // returns NULL if k is not present.
     
     // A function that returns the index of the first key that is greater
     // or equal to k
@@ -77,7 +129,7 @@ public:
     // A utility function to insert a new key in the subtree rooted with
     // this node. The assumption is, the node must be non-full when this
     // function is called
-    void insertNonFull(Key k, char *block);
+    void insertNonFull(Key k, Record block);
     
     // A utility function to split the child y of this node. i is index
     // of y in child array C[].  The Child y must be full when this
@@ -98,11 +150,11 @@ public:
     
     // A function to get the predecessor of the key- where the key
     // is present in the idx-th position in the node
-    pair<Key, char*>  getPred(int idx);
+    pair<Key, Record>  getPred(int idx);
     
     // A function to get the successor of the key- where the key
     // is present in the idx-th position in the node
-    pair<Key, char*>  getSucc(int idx);
+    pair<Key, Record>  getSucc(int idx);
     
     // A function to fill up the child node present in the idx-th
     // position in the C[] array if that child has less than t-1 keys
@@ -125,63 +177,6 @@ public:
     friend class BTree;
 };
 
-int keycmp(struct Key *a, struct Key *b);
-
-
-struct Key {
-    
-    Key(const char *key, int size): size(size){
-        strcpy(data, key);
-    };
-    
-    int size;
-    char data[MAXKEYSIZE];
-    
-    bool operator <(const Key& key) const
-    {
-        int result = memcmp(data, key.data, min(size, key.size));
-        if(result < 0){
-            return true;
-        }else{
-            return false;
-        }
-        return (size > key.size);
-    }
-    
-    bool operator ==(const Key& key) const
-    {
-        return !memcmp(data, key.data, size)  && size == key.size;
-    }
-    
-    bool operator >(const Key& key) const
-    {
-        return !(  *this < key || *this == key );
-        //return size >key.size;
-    }
-    
-    Key& operator=(const Key& other){
-        size = other.size;
-        if(size == 0){
-            return *this;
-        }
-        memcpy(data, other.data, other.size);
-        return *this;
-    }
-    
-    Key(const Key& other){
-        if (this != &other) {
-            size = other.size;
-            memcpy(data, other.data, other.size);
-        }
-    }
-    
-    Key():size(0){};
-    
-    Key(const char *keyStr){
-        size = strlen(keyStr);
-        strcpy(data, keyStr);
-    };
-};
 
 
 #endif /* defined(__DataBaseTS__BTreeNode__) */

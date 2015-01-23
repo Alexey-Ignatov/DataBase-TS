@@ -32,7 +32,7 @@ void BTreeNode::printChOffsets(){
 void BTreeNode::printBlocks(){
     cout<< "This is my blocks"<<endl;
     for (int i = 0 ; i < n ; ++i) {
-        cout<< string(keysValues[i].second, blockSize)<<endl;
+        cout<< keysValues[i].second.getSrc()<<endl;
     }
     cout<< "ENd of blocks"<<endl<<endl;
 }
@@ -66,16 +66,16 @@ int BTreeNode::writeNode(int offset ){
     
     
     //затем блоки
-    char tmp[blockSize];
+    char tmp[sizeof(Record)];
     for (int i = 0; i < 2*t - 1; ++i) {
         if (i <n) {
-            write(fileDesc, keysValues[i].second, blockSize);
+            write(fileDesc, &keysValues[i].second, sizeof(Record));
         }else{
-            write(fileDesc, tmp, blockSize);
+            write(fileDesc, tmp, sizeof(Record));
         }
         
     }
-    
+    //TODO: убраь eslse часть сверху
     //TODO: честно ли так поступать с вектором?
     //TODO: если размер blokcs != n - ERROR
     //TODO: может ли быть такое, что ownOffset нужен, а он пока невыставлен
@@ -88,7 +88,7 @@ int BTreeNode::writeNode(int offset ){
 
 BTreeNode *BTreeNode::readNode(int offset){
     lseek(fileDesc, offset, SEEK_SET);
-    char *blockBuffer = new char[blockSize*(2*t - 1)];
+    Record *blockBuffer = new Record[2*t - 1]();
     
     
     read(fileDesc,&n, sizeof(n));
@@ -106,9 +106,12 @@ BTreeNode *BTreeNode::readNode(int offset){
     if (!childrenOffsets.empty()) {
         read(fileDesc, &childrenOffsets[0], 2*t*sizeof(int));
     }
-    read(fileDesc, blockBuffer, n*blockSize);
+    
+    
+    read(fileDesc, blockBuffer, n*sizeof(Record));
     for (int i = 0; i < n; ++i) {
-        keysValues[i].second =blockBuffer + i*blockSize;
+        Record *currRec =blockBuffer + i;
+        keysValues[i].second = *currRec;
     }
     
     ownOffset = offset;
@@ -117,11 +120,10 @@ BTreeNode *BTreeNode::readNode(int offset){
     return NULL;
 }
 
-BTreeNode::BTreeNode(int t, int fileDesc, int blockSize, PageAllocator *pageAlloc):blockSize(blockSize), t(t), leaf(false), n(0), fileDesc(fileDesc), pageAllocator(pageAlloc), keysValues(std::vector<pair<Key, char *> >(2*t - 1)), childrenOffsets(std::vector<int>(2*t, -1))
+BTreeNode::BTreeNode(int t, int fileDesc, PageAllocator *pageAlloc):t(t), leaf(false), n(0), fileDesc(fileDesc), pageAllocator(pageAlloc), keysValues(std::vector<pair<Key, Record> >(2*t - 1)), childrenOffsets(std::vector<int>(2*t, -1))
 {
     
     ownOffset = -1;
-    //childrenOffsets = new int[2*t];
     n = 0;
 }
 
@@ -178,7 +180,7 @@ void BTreeNode::remove(Key k)
         
         // If the child where the key is supposed to exist has less that t keys,
         // we fill that child
-        BTreeNode child(t, fileDesc, blockSize, pageAllocator);
+        BTreeNode child(t, fileDesc, pageAllocator);
         child.readNode(childrenOffsets[idx]);
         
         if (child.n < t)
@@ -222,14 +224,14 @@ void BTreeNode::removeFromNonLeaf(int idx)
     // find the predecessor 'pred' of k in the subtree rooted at
     // C[idx]. Replace k by pred. Recursively delete pred
     // in C[idx]
-    BTreeNode childLess(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode childLess(t, fileDesc, pageAllocator);
     childLess.readNode(childrenOffsets[idx]);
     
-    BTreeNode childGrea(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode childGrea(t, fileDesc, pageAllocator);
     childGrea.readNode(childrenOffsets[idx + 1]);
     if (childLess.n >= t)
     {
-        pair<Key, char*> pred = getPred(idx);
+        pair<Key, Record> pred = getPred(idx);
         keysValues[idx] = pred;
         childLess.remove(pred.first);
         writeNode(ownOffset);
@@ -243,7 +245,7 @@ void BTreeNode::removeFromNonLeaf(int idx)
     // Recursively delete succ in C[idx+1]
     else if  (childGrea.n >= t)
     {
-        pair<Key, char*>  succ = getSucc(idx);
+        pair<Key, Record>  succ = getSucc(idx);
         keysValues[idx] = succ;
         childGrea.remove(succ.first);
         writeNode(ownOffset);
@@ -257,7 +259,7 @@ void BTreeNode::removeFromNonLeaf(int idx)
     else
     {
         merge(idx);
-        BTreeNode child(t, fileDesc, blockSize, pageAllocator);
+        BTreeNode child(t, fileDesc, pageAllocator);
         child.readNode(childrenOffsets[idx]);
         child.remove(k);
     }
@@ -265,10 +267,10 @@ void BTreeNode::removeFromNonLeaf(int idx)
 }
 
 // A function to get predecessor of keys[idx]
-pair<Key, char*> BTreeNode::getPred(int idx)
+pair<Key, Record> BTreeNode::getPred(int idx)
 {
     // Keep moving to the right most node until we reach a leaf
-    BTreeNode curr(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode curr(t, fileDesc, pageAllocator);
     curr.readNode(childrenOffsets[idx]);
     
     while (!curr.leaf)
@@ -278,11 +280,11 @@ pair<Key, char*> BTreeNode::getPred(int idx)
     return curr.keysValues[curr.n-1];
 }
 
-pair<Key, char*>  BTreeNode::getSucc(int idx)
+pair<Key, Record>  BTreeNode::getSucc(int idx)
 {
     
     // Keep moving the left most node starting from C[idx+1] until we reach a leaf
-    BTreeNode curr(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode curr(t, fileDesc, pageAllocator);
     curr.readNode(childrenOffsets[idx + 1]);
     while (!curr.leaf)
         curr.readNode(curr.childrenOffsets[0]);
@@ -294,8 +296,8 @@ pair<Key, char*>  BTreeNode::getSucc(int idx)
 // A function to fill child C[idx] which has less than t-1 keys
 void BTreeNode::fill(int idx)
 {
-    BTreeNode childLess(t, fileDesc, blockSize, pageAllocator);
-    BTreeNode childGrea(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode childLess(t, fileDesc, pageAllocator);
+    BTreeNode childGrea(t, fileDesc, pageAllocator);
     
     bool borrowed = false;
     
@@ -322,28 +324,7 @@ void BTreeNode::fill(int idx)
             merge(idx-1);
     }
     return;
-    
-    // If the previous child(C[idx-1]) has more than t-1 keys, borrow a key
-    // from that child
-    if (idx!=0 && childLess.n>=t)
-        borrowFromPrev(idx);
-    
-    // If the next child(C[idx+1]) has more than t-1 keys, borrow a key
-    // from that child
-    else if (idx!=n && childGrea.n>=t)
-        borrowFromNext(idx);
-    
-    // Merge C[idx] with its sibling
-    // If C[idx] is the last child, merge it with with its previous sibling
-    // Otherwise merge it with its next sibling
-    else
-    {
-        if (idx != n)
-            merge(idx);
-        else
-            merge(idx-1);
-    }
-    return;
+
 }
 
 // A function to borrow a key from C[idx-1] and insert it
@@ -354,10 +335,10 @@ void BTreeNode::borrowFromPrev(int idx)
     //BTreeNode *child=C[idx];
     //BTreeNode *sibling=C[idx-1];
     
-    BTreeNode child(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode child(t, fileDesc, pageAllocator);
     child.readNode(childrenOffsets[idx]);
     
-    BTreeNode sibling(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode sibling(t, fileDesc, pageAllocator);
     sibling.readNode(childrenOffsets[idx - 1]);
     // The last key from C[idx-1] goes up to the parent and key[idx-1]
     // from parent is inserted as the first key in C[idx]. Thus, the  loses
@@ -400,10 +381,10 @@ void BTreeNode::borrowFromPrev(int idx)
 void BTreeNode::borrowFromNext(int idx)
 {
     
-    BTreeNode child(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode child(t, fileDesc, pageAllocator);
     child.readNode(childrenOffsets[idx]);
     
-    BTreeNode sibling(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode sibling(t, fileDesc, pageAllocator);
     sibling.readNode(childrenOffsets[idx + 1]);
     
     // keys[idx] is inserted as the last key in C[idx]
@@ -445,10 +426,10 @@ void BTreeNode::borrowFromNext(int idx)
 // C[idx+1] is freed after merging
 void BTreeNode::merge(int idx)
 {
-    BTreeNode child(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode child(t, fileDesc, pageAllocator);
     child.readNode(childrenOffsets[idx]);
     
-    BTreeNode sibling(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode sibling(t, fileDesc, pageAllocator);
     sibling.readNode(childrenOffsets[idx + 1]);
     
     // Pulling a key from the current node and inserting it into (t-1)th
@@ -491,7 +472,7 @@ void BTreeNode::merge(int idx)
     return;
 }
 
-void BTreeNode::insertNonFull(Key k, char *block)
+void BTreeNode::insertNonFull(Key k, Record block)
 {
     // Initialize index as index of rightmost element
     int i = n-1;
@@ -522,7 +503,7 @@ void BTreeNode::insertNonFull(Key k, char *block)
             i--;
         
         // See if the found child is full
-        BTreeNode child(t, fileDesc, blockSize, pageAllocator);
+        BTreeNode child(t, fileDesc, pageAllocator);
         child.readNode(childrenOffsets[i+1]);
         if (child.n == 2*t-1)
         {
@@ -542,13 +523,13 @@ void BTreeNode::insertNonFull(Key k, char *block)
 void BTreeNode::splitChild(int i)
 {
     
-    BTreeNode y(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode y(t, fileDesc, pageAllocator);
     //TODO: лишнее чтение с диска
     y.readNode(childrenOffsets[i]);
     
 
     
-    BTreeNode z(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode z(t, fileDesc, pageAllocator);
     z.leaf = y.leaf;
     z.n = t - 1;
     
@@ -606,7 +587,7 @@ void BTreeNode::traverse()
     if (leaf == false)
         for (int i = 0; i <= n; i++)
         {
-            BTreeNode tmp(t, fileDesc, blockSize, pageAllocator);
+            BTreeNode tmp(t, fileDesc, pageAllocator);
             tmp.readNode(childrenOffsets[i]);
             tmp.traverse();
         }
@@ -616,7 +597,7 @@ void BTreeNode::traverse()
 
 
 
-char *BTreeNode::search(Key k)
+Record BTreeNode::search(Key k)
 {
     // Find the first key greater than or equal to k
     int i = 0;
@@ -629,10 +610,10 @@ char *BTreeNode::search(Key k)
     
     // If key is not found here and this is a leaf node
     if (leaf == true)
-        return NULL;
+        return Record();
     
     // Go to the appropriate child
-    BTreeNode child(t, fileDesc, blockSize, pageAllocator);
+    BTreeNode child(t, fileDesc, pageAllocator);
     child.readNode(childrenOffsets[i]);
     return child.search(k);
 }
@@ -640,10 +621,62 @@ char *BTreeNode::search(Key k)
 
 
 
-int keycmp(struct Key *a, struct Key *b) { //returns -1 if less, 0 if equal, 1 if more
-    int res = memcmp(&(a->data), &(b->data), min(a->size, b->size));
-    if (res == 0) {
-        res = a->size - b->size;
+
+
+
+
+
+
+
+
+
+
+Key::Key(const char *key, int size): size(size){
+    strcpy(data, key);
+};
+
+bool Key::operator <(const Key& key) const
+{
+    int result = memcmp(data, key.data, min(size, key.size));
+    if(result < 0){
+        return true;
+    }else{
+        return false;
     }
-    return res;
+    return (size > key.size);
 }
+
+bool Key::operator ==(const Key& key) const
+{
+    return !memcmp(data, key.data, size)  && size == key.size;
+}
+
+bool Key::operator >(const Key& key) const
+{
+    return !(  *this < key || *this == key );
+    //return size >key.size;
+}
+
+Key& Key::operator=(const Key& other){
+    size = other.size;
+    if(size == 0){
+        return *this;
+    }
+    memcpy(data, other.data, other.size);
+    return *this;
+}
+
+Key::Key(const Key& other){
+    if (this != &other) {
+        size = other.size;
+        memcpy(data, other.data, other.size);
+    }
+}
+
+Key::Key():size(0){};
+
+Key::Key(const char *keyStr){
+    size = strlen(keyStr);
+    strcpy(data, keyStr);
+};
+
