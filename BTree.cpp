@@ -39,7 +39,7 @@ int Cput(struct DB *db, struct DBT *key, struct DBT *data){
 
 extern "C" struct DB *dbcreate(const char *path, const struct DBC conf){
     struct DB *db = (struct DB *)malloc(sizeof(struct DB));
-    int tree_t = 15;
+    int tree_t = 12;
     db->bTree =new BTree(tree_t, path,conf.db_size, conf.chunk_size );
     db->put = Cput;
     db->get = Cget;
@@ -88,15 +88,11 @@ extern "C" int db_put(struct DB *db, void *key, size_t key_len, void *val, size_
 
 //*****************************************************************BTREE************************************************************************
 
-BTree::BTree(int _t, std::string path, int dbSize, int pageSize):  dbSize(dbSize), root(BTreeNode(_t, 0, NULL)), pageAllocator(PageAllocator(-1, pageSize))
+BTree::BTree(int _t, std::string path, int dbSize, int pageSize):  dbSize(dbSize), root(BTreeNode(_t, 0, NULL)), pageAllocator(PageAllocator(-1, pageSize, dbSize))
 {
-    char buf[1024];
     t = _t;
     
     fileDesc = open(path.c_str(), O_RDWR | O_CREAT, 0777);
-    for (int i = 0 ; i<dbSize; i+=1024) {
-        write(fileDesc, buf, 1024);
-    }
     
     lseek(fileDesc, 0, SEEK_SET);
     pageAllocator.fileDesc = fileDesc;

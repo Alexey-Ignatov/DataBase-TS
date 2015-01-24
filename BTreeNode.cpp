@@ -41,7 +41,10 @@ void BTreeNode::printBlocks(){
 int BTreeNode::writeNode(int offset ){
     ownOffset = offset;
     lseek(fileDesc, offset, SEEK_SET);
-
+    std::cout<<offset<<" write"<<std::endl;
+    if (offset < 0) {
+        std::cout<<"                           BAD OFFSET"<<endl;
+    }
     //сначала пишем количество ключей
     write(fileDesc, &n, sizeof(n));
     
@@ -81,8 +84,11 @@ BTreeNode *BTreeNode::readNode(int offset){
     lseek(fileDesc, offset, SEEK_SET);
     Record *blockBuffer = new Record[2*t - 1]();
     
-    
+    std::cout<<offset<<" read"<<std::endl;
     read(fileDesc,&n, sizeof(n));
+    if (offset < 0) {
+        std::cout<<"                           BAD OFFSET"<<endl;
+    }
     
     read(fileDesc, &leaf, sizeof(leaf));
     
@@ -110,7 +116,7 @@ BTreeNode *BTreeNode::readNode(int offset){
     return NULL;
 }
 
-BTreeNode::BTreeNode(int t, int fileDesc, PageAllocator *pageAlloc):t(t), leaf(false), n(0), fileDesc(fileDesc), pageAllocator(pageAlloc), keysValues(std::vector<pair<Key, Record> >(2*t - 1)), childrenOffsets(std::vector<int>(2*t, -1))
+BTreeNode::BTreeNode(int t, int fileDesc, PageAllocator *pageAlloc):t(t), leaf(true), n(0), fileDesc(fileDesc), pageAllocator(pageAlloc), keysValues(std::vector<pair<Key, Record> >(2*t - 1)), childrenOffsets(std::vector<int>(2*t, -1))
 {
     
     ownOffset = -1;
@@ -168,10 +174,9 @@ void BTreeNode::remove(Key k)
 
 void BTreeNode::removeFromLeaf (int idx)
 {
-    
+    //pageAllocator->freePage(childrenOffsets[idx]);
     for (int i=idx+1; i<n; ++i)
         keysValues[i-1] = keysValues[i];
-
     //TODO: освободить память за удаленным блоком
     n--;
     writeNode(ownOffset);
@@ -418,7 +423,7 @@ void BTreeNode::insertNonFull(Key k, Record block)
         if (child.n == 2*t-1)
         {
             splitChild(i+1);
-            
+            child.readNode(childrenOffsets[i+1]);
             if (keysValues[i+1].first < k)
                 child.readNode(childrenOffsets[i+2]);
         }

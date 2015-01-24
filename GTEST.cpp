@@ -299,7 +299,7 @@ TEST (BTreeNode, split_insert1)
     int tree_t = 2;
      
     int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*sizeof(Key) + 2*tree_t*4 + (2*tree_t-1)*sizeof(Record);//80t - 39
-    
+    int dbSize = 1000*nodeSizeOnDisk;
     
     
     char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!100";
@@ -313,7 +313,7 @@ TEST (BTreeNode, split_insert1)
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
     
-    PageAllocator *pageAlloc = new PageAllocator(file, nodeSizeOnDisk);
+    PageAllocator *pageAlloc = new PageAllocator(file, nodeSizeOnDisk, dbSize);
     
     write(file, c1, 1024);
     lseek(file, 0, SEEK_SET);
@@ -372,7 +372,7 @@ TEST (BTreeNode, split_insert1)
     head.insertNonFull("150", Record(c6, strlen(c6)));
     
     BTreeNode lastNode(tree_t, file, pageAlloc);
-    lastNode.readNode(4*nodeSizeOnDisk);
+    lastNode.readNode(pageAlloc->firstBlockOffset + 4*nodeSizeOnDisk);
     
     
 
@@ -403,8 +403,7 @@ TEST (BTreeNode, search0)
     int tree_t = 2;
      
     int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*sizeof(Key) + 2*tree_t*4 + (2*tree_t-1)*sizeof(Record);
-    int dbSize =102400;
-    
+    int dbSize = 1000*nodeSizeOnDisk;
     
     char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!100";
     char c2[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!200";
@@ -417,7 +416,7 @@ TEST (BTreeNode, search0)
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
     
-    PageAllocator *pageAlloc = new PageAllocator(file, nodeSizeOnDisk);
+    PageAllocator *pageAlloc = new PageAllocator(file, nodeSizeOnDisk, dbSize);
     
     write(file, c1, dbSize);
     lseek(file, 0, SEEK_SET);
@@ -482,7 +481,7 @@ TEST (BTreeNode, removeStillHead)
     int tree_t = 2;
      
     int nodeSizeOnDisk = 4 + 1 +(2*tree_t -1)*sizeof(Key) + 2*tree_t*4 + (2*tree_t-1)*sizeof(Record);
-    int dbSize =102400;
+    int dbSize = 1000*nodeSizeOnDisk;
     
     
     char c1[100] = "abcdefgfi!!!!!!!!!!!!!!!!!!!!100";
@@ -496,7 +495,7 @@ TEST (BTreeNode, removeStillHead)
     int file = open("from main.txt", O_RDWR | O_CREAT);
     
     
-    PageAllocator *pageAlloc = new PageAllocator(file, nodeSizeOnDisk);
+    PageAllocator *pageAlloc = new PageAllocator(file, nodeSizeOnDisk, dbSize);
     
     write(file, c1, dbSize);
     lseek(file, 0, SEEK_SET);
@@ -556,8 +555,8 @@ TEST (BTreeNode, removeStillHead)
     head.remove("110");
     head.remove("120");
     
-    left.readNode(nodeSizeOnDisk);
-    right.readNode(3*nodeSizeOnDisk);
+    left.readNode(pageAlloc->firstBlockOffset + nodeSizeOnDisk);
+    right.readNode(pageAlloc->firstBlockOffset +3*nodeSizeOnDisk);
     
     EXPECT_EQ(std::string(head.keysValues[0].first.data,head.keysValues[0].first.size ), std::string("400", 3));
     
@@ -608,7 +607,7 @@ TEST (BTree, simple_inserts)
     std::vector<BTreeNode> testVec(4, BTreeNode(tree_t, a.fileDesc, NULL));
     
     for (int i = 0; i < testVec.size(); ++i) {
-        testVec[i].readNode(nodeSizeOnDisk*i);
+        testVec[i].readNode(a.pageAllocator.firstBlockOffset +nodeSizeOnDisk*i);
     }
     
     EXPECT_EQ( std::string(testVec[1].keysValues[0].second.getSrc(), testVec[1].keysValues[0].second.getSize()),std::string(c2, 32) );
